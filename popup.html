@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>弹幕屏蔽设置</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 320px;
+      min-height: 400px;
+      padding: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fff;
+    }
+
+    h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+
+    .section {
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      color: #333;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #e33fff;
+      cursor: pointer;
+    }
+
+    .checkbox-item input[type="number"] {
+      width: 60px;
+      padding: 2px 6px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      text-align: center;
+      background: #f9f9f9;
+    }
+
+    .checkbox-item input[type="number"]:focus {
+      outline: 2px solid #e33fff;
+      border-color: transparent;
+      background: #fff;
+    }
+
+    .stats,
+    .record-list {
+      background: #f5f5f5;
+      padding: 8px 6px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #555;
+      border: 1px solid #e8e8e8;
+    }
+
+    .stats {
+      margin-bottom: 8px;
+    }
+
+    .stats.one-line .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 4px;
+      border-bottom: 1px solid #e8e8e8;
+      font-size: 12px;
+      color: #444;
+    }
+
+    .stats.one-line .row:last-child {
+      border-bottom: none;
+    }
+
+    .stats.one-line .row span:first-child {
+      font-weight: 500;
+      color: #666;
+    }
+
+    .stats.one-line .row span:last-child {
+      font-weight: 600;
+      color: #1a1a1a;
+      font-size: 15px;
+    }
+
+    .stats {
+      margin-bottom: 8px;
+    }
+
+    .stats .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .stats .row:last-child {
+      border-bottom: none;
+    }
+
+    .stats .row span:first-child {
+      font-weight: 500;
+    }
+
+    .stats .row span:last-child {
+      font-weight: 600;
+      color: #222;
+    }
+
+    .record-list {
+      max-height: 140px;
+      overflow-y: auto;
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 4px 6px;
+      font-size: 10.5px;
+    }
+
+    .record-list .record {
+      padding: 2px 0;
+      border-bottom: 1px solid #f0f0f0;
+      color: #444;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .record-list .record:last-child {
+      border-bottom: none;
+    }
+
+    .record-top {
+      color: #d63384;
+    }
+
+    .record-bottom {
+      color: #00d4ff;
+    }
+
+    .record-label {
+      font-weight: 500;
+      color: #888;
+      margin-right: 2px;
+    }
+
+    .empty-msg {
+      font-size: 10px;
+      color: #999;
+      text-align: center;
+      padding: 8px 2px;
+      font-style: italic;
+    }
+
+    .hint {
+      font-size: 9px;
+      color: #b60c0c;
+      margin-top: -4px;
+      font-style: italic;
+      margin-top: 0.5em;
+    }
+
+    .flex-r-bt {
+      display: flex;
+      align-items: space-between;
+      gap: 12px;
+
+      .checkbox-item {
+        font-size: 13px;
+        color: #333;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h2>弹幕屏蔽</h2>
+
+  <div class="section flex-r-bt">
+    <label class="checkbox-item" style="font-weight: 600; font-size: 14px; color: #1a1a1a;">
+      <input type="checkbox" id="chk-enabled" checked>
+      <span>启用</span>
+    </label>
+    <div class="checkbox-group" style="font-size: 12px; color: #333;">
+      <label class="checkbox-item">
+        <input type="checkbox" id="chk-top" checked>
+        <span>顶部弹幕</span>
+      </label>
+      <label class="checkbox-item">
+        <input type="checkbox" id="chk-bottom" checked>
+        <span>底部弹幕</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="section">
+
+  </div>
+
+  <div class="section">
+    <div class="section-title">检测间隔</div>
+    <div class="checkbox-group">
+      <label class="checkbox-item">
+        <input type="number" id="inp-interval" value="300" min="200" max="1000" step="50">
+        <span>毫秒</span>
+      </label>
+    </div>
+    <div class="hint">数值越小检测越快，200~1000毫秒之间</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📊 实时统计</div>
+    <div class="stats one-line">
+      <div class="row flex-r-bt">
+        <div>
+          <span>总数：</span>
+          <span id="stat-total">0</span>
+        </div>
+        <div>
+          <span>顶部：</span>
+          <span id="stat-top">0</span>
+        </div>
+        <div>
+          <span>底部：</span>
+          <span id="stat-bottom">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📋 屏蔽记录</div>
+    <div class="record-list" id="record-list">
+      <div class="empty-msg">暂无记录</div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>
