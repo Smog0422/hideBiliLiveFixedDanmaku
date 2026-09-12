@@ -3,13 +3,76 @@
 
 (function () {
   'use strict';
+  // ========== 容器查找（多版本兼容） ==========
+  function getDanmakuContainer() {
+    // 1. 先搜索主文档（兼容旧版直播间）
+    const c1 = document.querySelector('.web-player-danmaku');
+    const c2 = document.querySelector('.danmaku-item-container');
+    const mainContainer = c1 || c2;
 
+    if (mainContainer) {
+      console.log('[容器] 主文档找到弹幕容器, className:', mainContainer.className);
+      return mainContainer;
+    }
+
+    // 2. 搜索 iframe 内的弹幕容器（兼容 liteVersion 直播间）
+    const iframes = document.querySelectorAll('iframe');
+    for (let i = 0; i < iframes.length; i++) {
+      try {
+        const iframe = iframes[i];
+        // 只访问同源 iframe（排除跨域 iframe）
+        if (iframe.src && iframe.src.includes('live.bilibili.com')) {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+          if (iframeDoc) {
+            // 按优先级尝试已知类名
+            const iframeContainer = iframeDoc.querySelector('.web-player-danmaku')
+              || iframeDoc.querySelector('.danmaku-item-container')
+              || iframeDoc.querySelector('.fullscreen-danmaku-container');
+            if (iframeContainer) {
+              // 只在首次找到时打印
+              if (!containerFound) {
+                console.log('[容器] iframe内找到弹幕容器, className:', iframeContainer.className, ', iframe src:', iframe.src.substring(0, 60));
+                containerFound = true;
+              }
+              return iframeContainer;
+            }
+          }
+        }
+      } catch (e) {
+        // 跨域 iframe 访问失败，跳过
+        console.log('[容器] 跳过跨域iframe:', e.message);
+      }
+    }
+
+    console.warn('[容器] 未找到任何弹幕容器（主文档+iframe均无）');
+    return null;
+  }
+  //优先getDanmakuContainer进行检测，允许500ms重试5次
+  function checkDanmakuContainer(maxAttempts = 5, delay = 500) {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const checkContainer = () => {
+        const container = getDanmakuContainer();
+        if (container) {
+          resolve(container);
+        } else {
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(checkContainer, delay);
+          } else {
+            reject(null);
+          }
+        }
+      };
+      checkContainer();
+    });
+  }
   // ========== 全局变量 ==========
   let currentConfig = null;
   let processTimer = null;
   let isProcessing = false;
   let isContextInvalid = false; // 上下文失效标记
-
+  let containerFound = false; // 容器找到标记
   // ========== 统计与记录 ==========
   let stats = { total: 0, top: 0, bottom: 0 };
   let recordsList = [];
@@ -92,17 +155,20 @@
 
   // ========== 核心弹幕处理 ==========
   function processDanmakus() {
+    // 上下文失效 → 直接返回
+    if (isContextInvalid) return;
+    // 多理中 → 直接返回
     if (isProcessing) return;
     isProcessing = true;
 
     try {
-      const danmakus = document.querySelectorAll('.bili-danmaku-x-dm');
-      const container = document.querySelector('.web-player-danmaku');
-
+      const container = getDanmakuContainer();
       if (!container) {
         console.log('⏳ 等待弹幕容器...');
         return;
       }
+      // 仅从容器内获取弹幕元素，避免跨容器问题
+      const danmakus = container.querySelectorAll('.bili-danmaku-x-dm');
 
       const containerHeight = container.offsetHeight;
 
@@ -163,25 +229,39 @@
       hasStarted = true;
       const shouldRun = await checkConfigAndLocation();
       if (shouldRun) {
-        const container = document.querySelector('.web-player-danmaku');
+        const container = getDanmakuContainer();
         if (container) {
           const containerHeight = container.offsetHeight;
           console.log(`[直播间：是] [弹幕容器：正常] [canvas 高度：${containerHeight}px]`);
           startDetection();
+        } else {
+          console.warn('[直播间：是] [弹幕容器：未找到] 执行 checkDanmakuContainer 函数重试5次...');
+          try {
+            await checkDanmakuContainer();
+            if (getDanmakuContainer()) {
+              console.log('[重试成功] 弹幕容器已找到，继续执行 startDetection');
+              startDetection();
+            } else {
+              console.error('[重试失败] 弹幕容器仍未找到，终止检测，插件静默');
+            }
+          } catch (e) {
+            console.error('[重试异常]', e);
+            console.error('[重试失败] 弹幕容器仍未找到，终止检测，插件静默');
+          }
         }
       }
-    }
 
-    // 监听 popup 请求获取 stats 和 records
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      // 上下文失效 → 不再监听
-      if (isContextInvalid) return false;
-      if (message.type === 'GET_STATS') {
-        sendResponse({ stats, recordsList });
-        // 同步回包，不需要 return true
-      }
-      return false;
-    });
+      // 监听 popup 请求获取 stats 和 records
+      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        // 上下文失效 → 不再监听
+        if (isContextInvalid) return false;
+        if (message.type === 'GET_STATS') {
+          sendResponse({ stats, recordsList });
+          // 同步回包，不需要 return true
+        }
+        return false;
+      });
+    }
   }
 
   // ========== 启动 ==========
@@ -205,7 +285,7 @@
       return;
     }
 
-    const container = document.querySelector('.web-player-danmaku');
+    const container = getDanmakuContainer();
     if (!container) {
       console.log('⏳ 等待弹幕容器...');
       return;
